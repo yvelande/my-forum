@@ -26,15 +26,12 @@ contract UserInfo {
     // address[] public topAssertListAddresses;
 
     // 添加用户函数
-    function createUser(
-        address _userAddress,
-        string memory _userName,
-        string memory _pwd
-    ) public {
+    function createUser(string memory _userName, string memory _pwd) public {
         // 生成用户ID（使用简单的伪随机数生成函数）
         uint256 _userId = uint256(
             keccak256(abi.encodePacked(block.timestamp, _userName))
         );
+        address _userAddress = msg.sender;
         User memory newUser = User(
             _userAddress,
             _userId,
