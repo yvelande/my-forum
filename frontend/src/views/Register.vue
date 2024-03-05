@@ -19,6 +19,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   data() {
     return {
@@ -43,7 +44,7 @@ export default {
           const userAddress = this.userAddress; // 修改为 userAddress
           
           // 发送注册请求到后端
-          this.$axios.post('/register', {
+          axios.post('/register', {
             userName: userName,
             pwd: pwd,
             userAddress: userAddress
@@ -55,6 +56,7 @@ export default {
           .catch(error => {
             // 处理注册失败的逻辑
             console.error(error);
+            console.log(error.message)
           });
         } else {
           return false;

@@ -19,6 +19,8 @@ contract UserInfo {
     // 已注册用户地址
     address[] public registeredUserAddresses;
 
+    uint256 clear;
+
     // // 委员会成员列表
     // uint256[] public commitMembers;
 
@@ -26,12 +28,15 @@ contract UserInfo {
     // address[] public topAssertListAddresses;
 
     // 添加用户函数
-    function createUser(string memory _userName, string memory _pwd) public {
-        // 生成用户ID（使用简单的伪随机数生成函数）
+    function createUser(
+        string memory _userName,
+        string memory _pwd,
+        address _userAddress //
+    ) public {
+        //生成用户ID（使用简单的伪随机数生成函数）
         uint256 _userId = uint256(
             keccak256(abi.encodePacked(block.timestamp, _userName))
         );
-        address _userAddress = msg.sender;
         User memory newUser = User(
             _userAddress,
             _userId,
@@ -43,6 +48,10 @@ contract UserInfo {
         );
         userMap[_userId] = newUser;
         registeredUserAddresses.push(_userAddress);
+    }
+
+    function retrieve() public view returns (address) {
+        return registeredUserAddresses[0];
     }
 
     // 用户登录函数
