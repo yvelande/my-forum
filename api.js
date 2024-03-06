@@ -34,22 +34,83 @@ app.post("/register", async (req, res) => {
         // 使用 ethers.js 实例化合约
 
         console.log("Register contract...")
-        const userAddressTrue = ethers.getAddress(userAddress)
-        console.log
+        // res.json({ message: "Registration successful", userId: userId })
+        // 调用智能合约的创建用户函数
+        //从事件中获得返回的userId
+        let userIdReturn
+        userInfo.on("UserRegistered", (userId) => {
+            console.log("User Registered:", userId)
+            userIdReturn = userId
+        })
         const transactionResponse = await userInfo.createUser(
             userName,
             pwd,
             userAddress,
         )
-        await transactionResponse.wait(1)
-        console.log("Down")
-
-        const currentnumber = await userInfo.retrieve()
-        console.log(currentnumber)
-        // 返回响应给前端
-        res.json({ message: "Registration successful" })
+        await transactionResponse.wait()
+        //因为是uint256要进行转化
+        res.json({ userId: userIdReturn })
+        // 从交易响应中提取用户 ID
+        // 返回用户 ID 给前端
     } catch (error) {
         console.error("Error during registration:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+// 注册用户路由
+app.post("/login", async (req, res) => {
+    console.log("Received POST request to /login")
+    try {
+        const { userId, pwd } = req.body
+        console.log(userId)
+        console.log(pwd)
+        const accounts = await ethers.getSigners()
+        signer = accounts[0]
+        console.log(signer)
+        await deployments.fixture(["all"])
+        const UserInfoDeployment = await deployments.get("UserInfo")
+        userInfo = await ethers.getContractAt(
+            UserInfoDeployment.abi,
+            UserInfoDeployment.address,
+            signer,
+        )
+        // console.log(`got contract in ${userInfo.target}`)
+        // 使用 ethers.js 实例化合约
+        console.log("Login contract...")
+        // res.json({ message: "Registration successful", userId: userId })
+        // 调用智能合约的创建用户函数
+        //从事件中获得返回的userId
+        const isValidLogin = await userInfo.getPwd(userId)
+        res.json({ isValidLogin: isValidLogin })
+    } catch (error) {
+        console.error("Error during registration:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.get("/user/:userId", async (req, res) => {
+    console.log("Received GET request to /user/:userId")
+    try {
+        const userId = req.params.userId
+        const accounts = await ethers.getSigners()
+        const signer = accounts[0]
+        await deployments.fixture(["all"])
+        const UserInfoDeployment = await deployments.get("UserInfo")
+        const userInfo = await ethers.getContractAt(
+            UserInfoDeployment.abi,
+            UserInfoDeployment.address,
+            signer,
+        )
+        console.log(`Got contract in ${userInfo.target}`)
+
+        // 调用合约的 getUserInfo 函数
+        const user = await userInfo.getUserInfo(userId)
+        console.log(user)
+        // 返回用户信息给前端
+        res.json(user)
+    } catch (error) {
+        console.error("Error fetching user info:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })

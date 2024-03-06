@@ -5,7 +5,7 @@ contract UserInfo {
     // 定义用户结构体
     struct User {
         address userAddress; // 用户钱包地址
-        uint256 userId; // 用户ID
+        string userId; // 用户ID
         string userName; // 用户名
         string pwd; // 密码
         string role; // 用户角色
@@ -14,18 +14,12 @@ contract UserInfo {
     }
 
     // 用户ID到用户结构体的映射
-    mapping(uint256 => User) public userMap;
+    mapping(string => User) public userMap;
 
     // 已注册用户地址
     address[] public registeredUserAddresses;
 
-    uint256 clear;
-
-    // // 委员会成员列表
-    // uint256[] public commitMembers;
-
-    // // 资产排名前20用户列表
-    // address[] public topAssertListAddresses;
+    event UserRegistered(string userId);
 
     // 添加用户函数
     function createUser(
@@ -33,30 +27,27 @@ contract UserInfo {
         string memory _pwd,
         address _userAddress //
     ) public {
-        //生成用户ID（使用简单的伪随机数生成函数）
-        uint256 _userId = uint256(
-            keccak256(abi.encodePacked(block.timestamp, _userName))
-        );
+        // 生成用户ID（使用简单的伪随机数生成函数）
+        string memory _userId = "1";
+
+        // 触发事件
         User memory newUser = User(
             _userAddress,
             _userId,
             _userName,
             _pwd,
-            //普通用户roleID是“0”
+            // 普通用户roleID是“0”
             "0",
             0
         );
         userMap[_userId] = newUser;
         registeredUserAddresses.push(_userAddress);
-    }
-
-    function retrieve() public view returns (address) {
-        return registeredUserAddresses[0];
+        emit UserRegistered(_userId);
     }
 
     // 用户登录函数
     function loginUser(
-        uint256 _userId,
+        string memory _userId,
         string memory _pwd
     ) public view returns (bool) {
         return
@@ -64,13 +55,23 @@ contract UserInfo {
             keccak256(abi.encodePacked(_pwd));
     }
 
+    // 用户登录函数
+    function getPwd(string memory _userId) public view returns (string memory) {
+        return
+            // keccak256(abi.encodePacked(userMap[_userId].pwd)) ==
+            // keccak256(abi.encodePacked(_pwd));
+            userMap[_userId].pwd;
+    }
+
     // 查询用户信息函数
-    function getUserInfo(uint256 _userId) public view returns (User memory) {
+    function getUserInfo(
+        string memory _userId
+    ) public view returns (User memory) {
         return userMap[_userId];
     }
 
     // 更改用户角色函数
-    function changeUserRole(uint256 _userId, string memory _role) public {
+    function changeUserRole(string memory _userId, string memory _role) public {
         userMap[_userId].role = _role;
     }
 }
