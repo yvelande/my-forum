@@ -13,12 +13,21 @@ contract UserInfo {
         // uint256 activeValue; // 活跃值
     }
 
+    struct ReturnUser {
+        address userAddress; // 用户钱包地址
+        string userId; // 用户ID
+        string userName; // 用户名
+        string pwd; // 密码
+        string role; // 用户角色
+        string assert; // 用户资产
+        // uint256 activeValue; // 活跃值
+    }
     // 用户ID到用户结构体的映射
     mapping(string => User) public userMap;
-
     // 已注册用户地址
     address[] public registeredUserAddresses;
 
+    // event UserRegistered(string userId);
     event UserRegistered(string userId);
 
     // 添加用户函数
@@ -28,8 +37,10 @@ contract UserInfo {
         address _userAddress //
     ) public {
         // 生成用户ID（使用简单的伪随机数生成函数）
-        string memory _userId = "1";
-
+        uint userId = uint256(
+            keccak256(abi.encodePacked(block.timestamp, _userName))
+        );
+        string memory _userId = uint256ToString(userId);
         // 触发事件
         User memory newUser = User(
             _userAddress,
@@ -55,23 +66,46 @@ contract UserInfo {
             keccak256(abi.encodePacked(_pwd));
     }
 
-    // 用户登录函数
-    function getPwd(string memory _userId) public view returns (string memory) {
-        return
-            // keccak256(abi.encodePacked(userMap[_userId].pwd)) ==
-            // keccak256(abi.encodePacked(_pwd));
-            userMap[_userId].pwd;
-    }
-
     // 查询用户信息函数
     function getUserInfo(
         string memory _userId
-    ) public view returns (User memory) {
-        return userMap[_userId];
+    ) public view returns (ReturnUser memory) {
+        User memory user = userMap[_userId];
+        ReturnUser memory returnUser = ReturnUser(
+            user.userAddress,
+            user.userId,
+            user.userName,
+            user.pwd,
+            user.role,
+            uint256ToString(user.assert)
+        );
+        return returnUser;
     }
 
     // 更改用户角色函数
     function changeUserRole(string memory _userId, string memory _role) public {
         userMap[_userId].role = _role;
+    }
+
+    // 将 uint256 类型转换为字符串
+    function uint256ToString(
+        uint256 value
+    ) public pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + (value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
 }

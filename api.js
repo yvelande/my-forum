@@ -63,25 +63,12 @@ app.post("/login", async (req, res) => {
     console.log("Received POST request to /login")
     try {
         const { userId, pwd } = req.body
-        console.log(userId)
-        console.log(pwd)
-        const accounts = await ethers.getSigners()
-        signer = accounts[0]
-        console.log(signer)
-        await deployments.fixture(["all"])
-        const UserInfoDeployment = await deployments.get("UserInfo")
-        userInfo = await ethers.getContractAt(
-            UserInfoDeployment.abi,
-            UserInfoDeployment.address,
-            signer,
-        )
-        // console.log(`got contract in ${userInfo.target}`)
         // 使用 ethers.js 实例化合约
         console.log("Login contract...")
         // res.json({ message: "Registration successful", userId: userId })
         // 调用智能合约的创建用户函数
         //从事件中获得返回的userId
-        const isValidLogin = await userInfo.getPwd(userId)
+        const isValidLogin = await userInfo.loginUser(userId, pwd)
         res.json({ isValidLogin: isValidLogin })
     } catch (error) {
         console.error("Error during registration:", error)
@@ -93,20 +80,13 @@ app.get("/user/:userId", async (req, res) => {
     console.log("Received GET request to /user/:userId")
     try {
         const userId = req.params.userId
-        const accounts = await ethers.getSigners()
-        const signer = accounts[0]
-        await deployments.fixture(["all"])
-        const UserInfoDeployment = await deployments.get("UserInfo")
-        const userInfo = await ethers.getContractAt(
-            UserInfoDeployment.abi,
-            UserInfoDeployment.address,
-            signer,
-        )
+        console.log("User ID:", userId)
         console.log(`Got contract in ${userInfo.target}`)
-
+        console.log("获取用户信息如下")
         // 调用合约的 getUserInfo 函数
         const user = await userInfo.getUserInfo(userId)
         console.log(user)
+
         // 返回用户信息给前端
         res.json(user)
     } catch (error) {
