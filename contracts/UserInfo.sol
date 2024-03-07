@@ -5,7 +5,7 @@ contract UserInfo {
     // 定义用户结构体
     struct User {
         address userAddress; // 用户钱包地址
-        string userId; // 用户ID
+        uint256 userId; // 用户ID
         string userName; // 用户名
         string pwd; // 密码
         string role; // 用户角色
@@ -23,12 +23,12 @@ contract UserInfo {
         // uint256 activeValue; // 活跃值
     }
     // 用户ID到用户结构体的映射
-    mapping(string => User) public userMap;
+    mapping(uint256 => User) public userMap;
     // 已注册用户地址
     address[] public registeredUserAddresses;
 
     // event UserRegistered(string userId);
-    event UserRegistered(string userId);
+    event UserRegistered(uint256 userId);
 
     // 添加用户函数
     function createUser(
@@ -37,10 +37,10 @@ contract UserInfo {
         address _userAddress //
     ) public {
         // 生成用户ID（使用简单的伪随机数生成函数）
-        uint userId = uint256(
+        uint _userId = uint256(
             keccak256(abi.encodePacked(block.timestamp, _userName))
         );
-        string memory _userId = uint256ToString(userId);
+        // string memory _userId = uint256ToString(userId);
         // 触发事件
         User memory newUser = User(
             _userAddress,
@@ -58,7 +58,7 @@ contract UserInfo {
 
     // 用户登录函数
     function loginUser(
-        string memory _userId,
+        uint256 _userId,
         string memory _pwd
     ) public view returns (bool) {
         return
@@ -68,12 +68,12 @@ contract UserInfo {
 
     // 查询用户信息函数
     function getUserInfo(
-        string memory _userId
+        uint256 _userId
     ) public view returns (ReturnUser memory) {
         User memory user = userMap[_userId];
         ReturnUser memory returnUser = ReturnUser(
             user.userAddress,
-            user.userId,
+            uint256ToString(user.userId),
             user.userName,
             user.pwd,
             user.role,
@@ -83,8 +83,28 @@ contract UserInfo {
     }
 
     // 更改用户角色函数
-    function changeUserRole(string memory _userId, string memory _role) public {
+    function changeUserRole(uint256 _userId, string memory _role) public {
         userMap[_userId].role = _role;
+    }
+
+    function updateUserInfo(
+        address userAddress, // 用户钱包地址
+        uint256 userId, // 用户ID
+        string memory userName, // 用户名
+        string memory pwd, // 密码
+        string memory role,
+        uint256 assertUpdate
+    ) public {
+        User memory newUser = User(
+            userAddress,
+            userId,
+            userName,
+            pwd,
+            // 普通用户roleID是“0”
+            role,
+            assertUpdate
+        );
+        userMap[userId] = newUser;
     }
 
     // 将 uint256 类型转换为字符串

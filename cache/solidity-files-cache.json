@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/huyu0408/hh-fcc/my-forum/contracts/UserInfo.sol": {
-      "lastModificationDate": 1709815332293,
-      "contentHash": "f63fa5f05333cccecba509d62c6238eb",
+      "lastModificationDate": 1709819575671,
+      "contentHash": "80f5971e95aba44635589e6a7b54cbc4",
       "sourceName": "contracts/UserInfo.sol",
       "solcConfig": {
         "version": "0.8.7",
