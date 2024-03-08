@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/UserInfo.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\n\ncontract UserInfo {\n    // 定义用户结构体\n    struct User {\n        address userAddress; // 用户钱包地址\n        uint256 userId; // 用户ID\n        string userName; // 用户名\n        string pwd; // 密码\n        string role; // 用户角色\n        uint256 assert; // 用户资产\n        uint256 userState; //用户状态 1存在 0删除\n    }\n\n    struct ReturnUser {\n        address userAddress; // 用户钱包地址\n        string userId; // 用户ID\n        string userName; // 用户名\n        string pwd; // 密码\n        string role; // 用户角色\n        string assert; // 用户资产\n        string userState; //用户状态\n    }\n    // 用户ID到用户结构体的映射\n    mapping(uint256 => User) public userMap;\n    // 已注册用户地址\n    address[] public registeredUserAddresses;\n\n    // event UserRegistered(string userId);\n    event UserRegistered(uint256 userId);\n\n    // 添加用户函数\n    function createUser(\n        string memory _userName,\n        string memory _pwd,\n        address _userAddress //\n    ) public {\n        // 生成用户ID（使用简单的伪随机数生成函数）\n        uint _userId = uint256(\n            keccak256(abi.encodePacked(block.timestamp, _userName))\n        );\n        // string memory _userId = uint256ToString(userId);\n        // 触发事件\n        User memory newUser = User(\n            _userAddress,\n            _userId,\n            _userName,\n            _pwd,\n            // 普通用户roleID是“0”\n            \"0\",\n            0,\n            1\n        );\n        userMap[_userId] = newUser;\n        registeredUserAddresses.push(_userAddress);\n        emit UserRegistered(_userId);\n    }\n\n    // 用户登录函数\n    function loginUser(\n        uint256 _userId,\n        string memory _pwd\n    ) public view returns (bool) {\n        return\n            keccak256(abi.encodePacked(userMap[_userId].pwd)) ==\n            keccak256(abi.encodePacked(_pwd));\n    }\n\n    // 查询用户信息函数\n    function getUserInfo(\n        uint256 _userId\n    ) public view returns (ReturnUser memory) {\n        User memory user = userMap[_userId];\n        ReturnUser memory returnUser = ReturnUser(\n            user.userAddress,\n            uint256ToString(user.userId),\n            user.userName,\n            user.pwd,\n            user.role,\n            uint256ToString(user.assert),\n            uint256ToString(user.userState)\n        );\n        return returnUser;\n    }\n\n    // 更改用户角色函数\n    function changeUserRole(uint256 _userId, string memory _role) public {\n        userMap[_userId].role = _role;\n    }\n\n    function updateUserInfo(\n        address userAddress, // 用户钱包地址\n        uint256 userId, // 用户ID\n        string memory userName, // 用户名\n        string memory pwd, // 密码\n        string memory role,\n        uint256 assertUpdate\n    ) public {\n        User memory newUser = User(\n            userAddress,\n            userId,\n            userName,\n            pwd,\n            // 普通用户roleID是“0”\n            role,\n            assertUpdate,\n            userMap[userId].userState\n        );\n        userMap[userId] = newUser;\n    }\n\n    // 将 uint256 类型转换为字符串\n    function uint256ToString(\n        uint256 value\n    ) public pure returns (string memory) {\n        if (value == 0) {\n            return \"0\";\n        }\n        uint256 temp = value;\n        uint256 digits;\n        while (temp != 0) {\n            digits++;\n            temp /= 10;\n        }\n        bytes memory buffer = new bytes(digits);\n        while (value != 0) {\n            digits -= 1;\n            buffer[digits] = bytes1(uint8(48 + (value % 10)));\n            value /= 10;\n        }\n        return string(buffer);\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

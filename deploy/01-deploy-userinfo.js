@@ -9,10 +9,20 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
     //when going for localhost or hardhat network we want to use a mock
-    const fundMe = await deploy("UserInfo", {
+    const userContract = await deploy("UserInfo", {
         from: deployer,
         log: true,
     })
+    log("UserInfo deployed at:", userContract.address)
+    log("----------------------------------------------------")
+
+    // 部署第二个合约
+    const contentContract = await deploy("ContentInfo", {
+        from: deployer,
+        log: true,
+    })
+    log("ContentInfo deployed at:", contentContract.address)
+
     log("----------------------------------------------------")
 }
 module.exports.tags = ["all"]

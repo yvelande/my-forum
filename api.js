@@ -12,7 +12,8 @@ app.use(cors())
 //     console.error(err.stack)
 //     res.status(500).send("Something broke!")
 // })
-
+let userInfo
+let contentInfo
 // 注册用户路由
 app.post("/register", async (req, res) => {
     console.log("Received POST request to /register")
@@ -126,6 +127,106 @@ app.post("/user/update", async (req, res) => {
         await transactionResponse.wait()
         // 返回用户信息给前端
         res.json({ message: "Registration successful" })
+    } catch (error) {
+        console.error("Error fetching user info:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+// 创建文章路由
+app.post("/create-article", async (req, res) => {
+    console.log("Received POST request to /create-article")
+    try {
+        const { userId, title, content } = req.body
+        // 获取以太坊账号
+        const accounts = await ethers.getSigners()
+        const signer = accounts[0]
+
+        // 部署合约
+        await deployments.fixture(["all"])
+        const ContentInfoDeployment = await deployments.get("ContentInfo")
+
+        // 获取文章合约实例
+        contentInfo = await ethers.getContractAt(
+            ContentInfoDeployment.abi,
+            ContentInfoDeployment.address,
+            signer,
+        )
+        console.log(`got contract in ${contentInfo.target}`)
+        console.log("Creating article...")
+
+        const contentIdReturn = ""
+        contentInfo.once("ContentCreated", (contentId) => {
+            console.log("Content Created:", contentId)
+            contentIdReturn = contentId
+        })
+
+        // 发送创建文章交易
+        const transactionResponse = await contentInfo.createContent(
+            fromStringToUint(userId),
+            title,
+            content,
+        )
+        await transactionResponse.wait()
+
+        console.log("Article created successfully")
+        res.json({ contentId: contentIdReturn.toString() })
+    } catch (error) {
+        console.error("Error creating article:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.get("/content/:contentId", async (req, res) => {
+    console.log("Received GET request to /content/:contentId")
+    try {
+        const contentId = req.params.contentId
+        console.log("Content ID:", contentId)
+        console.log(`Got contract in ${contentInfo.target}`)
+        const content = await contentInfo.getContent(
+            fromStringToUint(contentId),
+        )
+        console.log("获取文章信息如下", content)
+
+        // 返回用户信息给前端
+        res.json(content)
+    } catch (error) {
+        console.error("Error fetching user info:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/content/update", async (req, res) => {
+    console.log("Received POST request to /content/update")
+    try {
+        const { contentId, title, content } = req.body
+        console.log("Content ID:", contentId)
+        console.log(`Got contract in ${contentInfo.target}`)
+        console.log("进行文章更新")
+        // 调用合约的 getUserInfo 函数
+        const transactionResponse = await contentInfo.updateContent(
+            fromStringToUint(contentId),
+            title,
+            content,
+        )
+        await transactionResponse.wait()
+        // 返回用户信息给前端
+        res.json({ message: "Registration successful" })
+    } catch (error) {
+        console.error("Error fetching user info:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.get("/content/getAllContent", async (req, res) => {
+    console.log("Received GET request to /content/getAllContent")
+    try {
+        console.log(`Got contract in ${contentInfo.target}`)
+        const content = await contentInfo.getAllContent()
+        console.log("获取文章List信息如下", content)
+
+        // 返回用户信息给前端
+        res.json(content)
     } catch (error) {
         console.error("Error fetching user info:", error)
         res.status(500).json({ error: "Internal Server Error" })

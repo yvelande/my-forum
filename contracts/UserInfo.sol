@@ -10,7 +10,7 @@ contract UserInfo {
         string pwd; // 密码
         string role; // 用户角色
         uint256 assert; // 用户资产
-        // uint256 activeValue; // 活跃值
+        uint256 userState; //用户状态 1存在 0删除
     }
 
     struct ReturnUser {
@@ -20,7 +20,7 @@ contract UserInfo {
         string pwd; // 密码
         string role; // 用户角色
         string assert; // 用户资产
-        // uint256 activeValue; // 活跃值
+        string userState; //用户状态
     }
     // 用户ID到用户结构体的映射
     mapping(uint256 => User) public userMap;
@@ -49,7 +49,8 @@ contract UserInfo {
             _pwd,
             // 普通用户roleID是“0”
             "0",
-            0
+            0,
+            1
         );
         userMap[_userId] = newUser;
         registeredUserAddresses.push(_userAddress);
@@ -77,7 +78,8 @@ contract UserInfo {
             user.userName,
             user.pwd,
             user.role,
-            uint256ToString(user.assert)
+            uint256ToString(user.assert),
+            uint256ToString(user.userState)
         );
         return returnUser;
     }
@@ -102,7 +104,8 @@ contract UserInfo {
             pwd,
             // 普通用户roleID是“0”
             role,
-            assertUpdate
+            assertUpdate,
+            userMap[userId].userState
         );
         userMap[userId] = newUser;
     }
