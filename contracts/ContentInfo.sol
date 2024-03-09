@@ -27,8 +27,8 @@ contract ContentInfo {
         uint256 contentId; // 文章ID
         uint256 userId; // 用户ID
         uint256 commentId; // 评论ID
-        string content; // 评论内容
-        uint256 updateTime; // 评论发表时间
+        string content; // 投诉内容
+        uint256 updateTime; // 投诉发表时间
         uint256 complainState; // 评论状态  1存在 0删除
     }
 
@@ -52,8 +52,19 @@ contract ContentInfo {
         string commentState; // 评论状态
     }
 
+    struct ReturnComplain {
+        string complaintId; // 投诉id
+        string contentId; // 文章ID
+        string userId; // 用户ID
+        string commentId; // 评论ID
+        string content; // 投诉内容
+        string updateTime; // 投诉发表时间
+        string complainState; // 投诉状态
+    }
+
     mapping(uint256 => Content) public contentMap;
     uint256[] public contentIds;
+    uint256[] public complainIds;
     mapping(uint256 => Comment) public commentMap;
     mapping(uint256 => Complain) public complainMap;
     mapping(uint256 => uint256[]) public contentComments; // 映射 contentId 到评论数组
@@ -63,6 +74,7 @@ contract ContentInfo {
     event PraiseDone(uint256 praiseCount); //这是对帖子进行评论的内容
     event CommentCreated(uint256 commentId);
     event PraiseCommentDone(uint256 praiseCount);
+    event ComplaintCreated(uint256 complaintId);
 
     function createContent(
         uint256 _userId,
@@ -120,10 +132,8 @@ contract ContentInfo {
     }
 
     function praiseContent(uint256 _contentId) public {
-        Content memory content = contentMap[_contentId];
-        content.praiseCount++;
-        contentMap[_contentId] = content;
-        emit PraiseDone(content.praiseCount);
+        contentMap[_contentId].praiseCount++;
+        emit PraiseDone(contentMap[_contentId].praiseCount);
     }
 
     function getAllContent() public view returns (ReturnContent[] memory) {
@@ -266,9 +276,100 @@ contract ContentInfo {
         // );
 
         // 增加评论的赞数
+        // Comment memory comment = commentMap[_commentId];
+        // comment.praiseCount++;
         commentMap[_commentId].praiseCount++;
-        // 触发事件
         emit PraiseCommentDone(commentMap[_commentId].praiseCount);
+        // commentMap[_commentId] = comment;
+        // 触发事件
+    }
+
+    function createComplaint(
+        uint256 _contentId,
+        uint256 _userId,
+        uint256 _commentId,
+        string memory _complaintContent
+    ) public {
+        uint256 _complaintId = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp,
+                    _contentId,
+                    _userId,
+                    _commentId
+                )
+            )
+        );
+        complainMap[_complaintId] = Complain(
+            _complaintId,
+            _contentId,
+            _userId,
+            _commentId,
+            _complaintContent,
+            block.timestamp,
+            1 // 投诉状态为存在
+        );
+        complainIds.push(_complaintId);
+        emit ComplaintCreated(_complaintId);
+    }
+
+    function getComplain(
+        uint256 _complaintId
+    ) public view returns (ReturnComplain memory) {
+        // 确保投诉存在
+        // require(
+        //     complainMap[_complaintId].complainState == 1,
+        //     "Complain does not exist"
+        // );
+
+        Complain memory complain = complainMap[_complaintId];
+        ReturnComplain memory returnComplain = ReturnComplain(
+            uint256ToString(complain.complaintId),
+            uint256ToString(complain.contentId),
+            uint256ToString(complain.userId),
+            uint256ToString(complain.commentId),
+            complain.content,
+            uint256ToString(complain.updateTime),
+            uint256ToString(complain.complainState)
+        );
+        // 返回投诉内容
+        return returnComplain;
+    }
+
+    // 删除投诉
+    function deleteComplain(uint256 _complainId) public {
+        // 确保投诉存在
+        // require(
+        //     complainMap[_complainId].complainState == 1,
+        //     "Complain does not exist"
+        // );
+
+        // 删除投诉
+        Complain memory complainDelete = complainMap[_complainId];
+        complainDelete.complainState = 0;
+        complainMap[_complainId] = complainDelete;
+    }
+
+    // 获取被投诉的内容
+    function getAllComplain() public view returns (ReturnComplain[] memory) {
+        uint256 count = complainIds.length;
+        uint256 complainedCount = 0;
+        for (uint256 i = 0; i < count; i++) {
+            if (complainMap[complainIds[i]].complainState == 1) {
+                complainedCount++;
+            }
+        }
+        ReturnComplain[] memory complainedContent = new ReturnComplain[](
+            complainedCount
+        );
+        uint256 index = 0;
+        for (uint256 i = 0; i < count; i++) {
+            if (complainMap[complainIds[i]].complainState == 1) {
+                complainedContent[index] = getComplain(complainIds[i]);
+                index++;
+            }
+        }
+        return complainedContent;
     }
 
     // 将 uint256 类型转换为字符串

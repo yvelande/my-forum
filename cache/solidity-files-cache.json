@@ -44,8 +44,8 @@
       ]
     },
     "/home/huyu0408/hh-fcc/my-forum/contracts/ContentInfo.sol": {
-      "lastModificationDate": 1709972932040,
-      "contentHash": "e66a2f5995dd8e7d3dccce146280c940",
+      "lastModificationDate": 1709985374198,
+      "contentHash": "67c0ecb81210a7fcca376ae2cf279483",
       "sourceName": "contracts/ContentInfo.sol",
       "solcConfig": {
         "version": "0.8.7",

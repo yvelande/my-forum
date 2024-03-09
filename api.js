@@ -286,13 +286,13 @@ app.get("/content/getAllContent", async (req, res) => {
     }
 })
 
-app.post("/comment/praiseComment", async (req, res) => {
+app.post("/content/doPraise", async (req, res) => {
     console.log("Received POST request to /comment/praiseComment")
     try {
-        const { commentId } = req.body
-        console.log("Comment ID:", commentId)
+        const { contentId } = req.body
+        console.log("content ID:", contentId)
         console.log(`Got contract in ${contentInfo.target}`)
-        console.log("对评论进行点赞", commentId)
+        console.log("对帖子进行点赞", contentId)
 
         // 创建一个 Promise 用于等待事件被触发
         const praiseDonePromise = new Promise((resolve, reject) => {
@@ -303,7 +303,7 @@ app.post("/comment/praiseComment", async (req, res) => {
         })
 
         // 调用智能合约的点赞评论函数
-        const transactionResponse = await contentInfo.praiseComment(commentId)
+        const transactionResponse = await contentInfo.praiseContent(contentId)
         await transactionResponse.wait()
 
         // 等待点赞事件被触发，并获取点赞数
@@ -312,7 +312,7 @@ app.post("/comment/praiseComment", async (req, res) => {
         // 返回点赞数给前端
         res.json({ praiseCount: praiseCountReturn.toString() })
     } catch (error) {
-        console.error("Error praising comment:", error)
+        console.error("Error praising content:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })
@@ -434,7 +434,8 @@ app.post("/comment/praiseComment", async (req, res) => {
         const { commentId } = req.body
         console.log("Comment ID:", commentId)
         console.log(`Got contract in ${contentInfo.target}`)
-        console.log("对文章进行点赞", commentId)
+        console.log("对评论进行点赞", commentId)
+
         // 创建一个 Promise 用于等待事件被触发
         const praiseDonePromise = new Promise((resolve, reject) => {
             contentInfo.once("PraiseCommentDone", (praiseCount) => {
@@ -442,13 +443,105 @@ app.post("/comment/praiseComment", async (req, res) => {
                 resolve(praiseCount)
             })
         })
-        const transactionResponse = await contentInfo.praiseContent(commentId)
+
+        // 调用智能合约的点赞评论函数
+        const transactionResponse = await contentInfo.praiseComment(commentId)
         await transactionResponse.wait()
+
+        // 等待点赞评论事件被触发，并获取点赞数
         const praiseCountReturn = await praiseDonePromise
-        // 返回用户信息给前端
+
+        // 返回点赞数给前端
         res.json({ praiseCount: praiseCountReturn.toString() })
     } catch (error) {
         console.error("Error praising comment:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+// 创建投诉
+app.post("/create-complain", async (req, res) => {
+    console.log("Received POST request to /create-complain")
+    try {
+        const { userId, contentId, commentId, content } = req.body
+        console.log(`Got contract in ${contentInfo.target}`)
+        console.log("创建新的投诉")
+
+        // 创建一个 Promise 用于等待事件被触发
+        const complaintCreatedPromise = new Promise((resolve, reject) => {
+            contentInfo.once("ComplaintCreated", (complaintId) => {
+                console.log("Complaint Created:", complaintId)
+                resolve(complaintId)
+            })
+        })
+
+        // 发送创建评论交易
+        const transactionResponse = await contentInfo.createComplaint(
+            fromStringToUint(contentId),
+            fromStringToUint(userId),
+            fromStringToUint(commentId),
+            content,
+        )
+        await transactionResponse.wait()
+
+        // 等待事件被触发，并获取评论 ID
+        const complaintIdReturn = await complaintCreatedPromise
+
+        console.log("Comment created successfully")
+        console.log(complaintIdReturn)
+        res.json({ complainId: complaintIdReturn.toString() })
+    } catch (error) {
+        console.error("Error creating complaint:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.get("/complain/get/:complainId", async (req, res) => {
+    console.log("Received GET request to /complain/get/:complainId")
+    try {
+        const complainId = req.params.complainId
+        console.log("Complain ID:", complainId)
+        console.log(`Got contract in ${contentInfo.target}`)
+        const complain = await contentInfo.getComplain(
+            fromStringToUint(complainId),
+        )
+        console.log("获取投诉信息如下", complain)
+        // 返回投诉信息给前端
+        res.json({
+            complaintId: complain.complaintId,
+            contentId: complain.contentId,
+            userId: complain.userId,
+            commentId: complain.commentId,
+            content: complain.content,
+            updateTime: complain.updateTime,
+            complainState: complain.complainState,
+        })
+    } catch (error) {
+        console.error("Error fetching complain info:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.get("/complain/getAllComplaints", async (req, res) => {
+    console.log("Received GET request to /complain/getAllComplaints")
+    try {
+        console.log(`Got contract in ${contentInfo.target}`)
+        const complaintAll = await contentInfo.getAllComplain()
+        console.log("获取投诉信息如下", complaintAll)
+        const complaintArray = complaintAll.map((item) => ({
+            complaintId: item.complaintId,
+            contentId: item.contentId,
+            userId: item.userId,
+            commentId: item.commentId,
+            content: item.content,
+            updateTime: item.updateTime,
+            complainState: item.complainState,
+        }))
+
+        // 返回投诉信息给前端
+        res.json(complaintArray)
+    } catch (error) {
+        console.error("Error fetching all complaint info:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })
