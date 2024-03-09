@@ -3,6 +3,7 @@ const express = require("express")
 const bodyParser = require("body-parser")
 const cors = require("cors")
 const { web3, default: Web3 } = require("web3")
+const { application } = require("express")
 const app = express()
 app.use(bodyParser.json())
 // 使用CORS中间件
@@ -15,12 +16,11 @@ app.use(cors())
 let userInfo
 let contentInfo
 // 注册用户路由
-app.post("/register", async (req, res) => {
-    console.log("Received POST request to /register")
+
+// 创建合约
+app.post("/create-user", async (req, res) => {
+    console.log("Received POST request to /create-content")
     try {
-        const { userName, pwd, userAddress } = req.body
-        console.log(userAddress)
-        console.log(pwd)
         const accounts = await ethers.getSigners()
         signer = accounts[0]
         console.log(signer)
@@ -32,27 +32,44 @@ app.post("/register", async (req, res) => {
             signer,
         )
         console.log(`got contract in ${userInfo.target}`)
+        res.json({ message: "成功创建用户合约" })
+    } catch (error) {
+        console.error("Error creating Content:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/register", async (req, res) => {
+    console.log("Received POST request to /register")
+    try {
+        const { userName, pwd, userAddress } = req.body
+        console.log(userAddress)
+        console.log(pwd)
+        console.log(`got contract in ${userInfo.target}`)
         // 使用 ethers.js 实例化合约
 
         console.log("Register contract...")
-        // res.json({ message: "Registration successful", userId: userId })
-        // 调用智能合约的创建用户函数
-        //从事件中获得返回的userId
-        let userIdReturn
-        userInfo.on("UserRegistered", (userId) => {
-            console.log("User Registered:", userId)
-            userIdReturn = userId
+        // 创建一个 Promise 用于等待事件被触发
+        const userIdRegisteredPromise = new Promise((resolve, reject) => {
+            userInfo.once("UserRegistered", (userId) => {
+                console.log("User Registered:", userId)
+                resolve(userId)
+            })
         })
+
+        // 发送创建用户的交易
         const transactionResponse = await userInfo.createUser(
             userName,
             pwd,
             userAddress,
         )
         await transactionResponse.wait()
-        //因为是uint256要进行转化
-        res.json({ userId: userIdReturn.toString() })
-        // 从交易响应中提取用户 ID
+
+        // 等待事件被触发，并获取用户 ID
+        const userIdReturn = await userIdRegisteredPromise
+
         // 返回用户 ID 给前端
+        res.json({ userId: userIdReturn.toString() })
     } catch (error) {
         console.error("Error during registration:", error)
         res.status(500).json({ error: "Internal Server Error" })
@@ -77,12 +94,12 @@ app.post("/login", async (req, res) => {
         console.log(isValidLogin)
         res.json({ isValidLogin: isValidLogin })
     } catch (error) {
-        console.error("Error during registration:", error)
+        console.error("Error during Login:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })
 
-app.get("/user/:userId", async (req, res) => {
+app.get("/user/get/:userId", async (req, res) => {
     console.log("Received GET request to /user/:userId")
     try {
         const userId = req.params.userId
@@ -128,17 +145,17 @@ app.post("/user/update", async (req, res) => {
         // 返回用户信息给前端
         res.json({ message: "Registration successful" })
     } catch (error) {
-        console.error("Error fetching user info:", error)
+        console.error("Error updating user info:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })
 
-// 创建文章路由
-app.post("/create-article", async (req, res) => {
-    console.log("Received POST request to /create-article")
+// 创建合约
+app.post("/create-content", async (req, res) => {
+    console.log("Received POST request to /create-content")
     try {
-        const { userId, title, content } = req.body
-        // 获取以太坊账号
+        // const { userId, title, content } = req.body
+        // // 获取以太坊账号
         const accounts = await ethers.getSigners()
         const signer = accounts[0]
 
@@ -153,12 +170,27 @@ app.post("/create-article", async (req, res) => {
             signer,
         )
         console.log(`got contract in ${contentInfo.target}`)
+        res.json({ message: "成功创建内容合约" })
+    } catch (error) {
+        console.error("Error creating content:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/create-article", async (req, res) => {
+    console.log("Received POST request to /create-article")
+    try {
+        const { userId, title, content } = req.body
+        // 获取以太坊账号
+        console.log(`got contract in ${contentInfo.target}`)
         console.log("Creating article...")
 
-        const contentIdReturn = ""
-        contentInfo.once("ContentCreated", (contentId) => {
-            console.log("Content Created:", contentId)
-            contentIdReturn = contentId
+        // 创建一个 Promise 用于等待事件被触发
+        const contentCreatedPromise = new Promise((resolve, reject) => {
+            contentInfo.once("ContentCreated", (contentId) => {
+                console.log("Content Created:", contentId)
+                resolve(contentId)
+            })
         })
 
         // 发送创建文章交易
@@ -169,7 +201,11 @@ app.post("/create-article", async (req, res) => {
         )
         await transactionResponse.wait()
 
+        // 等待事件被触发，并获取文章 ID
+        const contentIdReturn = await contentCreatedPromise
+
         console.log("Article created successfully")
+        console.log(contentIdReturn)
         res.json({ contentId: contentIdReturn.toString() })
     } catch (error) {
         console.error("Error creating article:", error)
@@ -177,7 +213,7 @@ app.post("/create-article", async (req, res) => {
     }
 })
 
-app.get("/content/:contentId", async (req, res) => {
+app.get("/content/get/:contentId", async (req, res) => {
     console.log("Received GET request to /content/:contentId")
     try {
         const contentId = req.params.contentId
@@ -187,11 +223,19 @@ app.get("/content/:contentId", async (req, res) => {
             fromStringToUint(contentId),
         )
         console.log("获取文章信息如下", content)
-
+        const item = content
         // 返回用户信息给前端
-        res.json(content)
+        res.json({
+            contentId: item.contentId,
+            userId: item.userId,
+            title: item.title,
+            content: item.content,
+            updateTime: item.updateTime,
+            praiseCount: item.praiseCount,
+            contentState: item.contentState,
+        })
     } catch (error) {
-        console.error("Error fetching user info:", error)
+        console.error("Error fetching content info:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })
@@ -213,7 +257,7 @@ app.post("/content/update", async (req, res) => {
         // 返回用户信息给前端
         res.json({ message: "Registration successful" })
     } catch (error) {
-        console.error("Error fetching user info:", error)
+        console.error("Error updating content info:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })
@@ -222,13 +266,189 @@ app.get("/content/getAllContent", async (req, res) => {
     console.log("Received GET request to /content/getAllContent")
     try {
         console.log(`Got contract in ${contentInfo.target}`)
-        const content = await contentInfo.getAllContent()
-        console.log("获取文章List信息如下", content)
+        const contentAll = await contentInfo.getAllContent()
+        console.log("获取文章List信息如下", contentAll)
+        const contentArray = contentAll.map((item) => ({
+            contentId: item.contentId,
+            userId: item.userId,
+            title: item.title,
+            content: item.content,
+            updateTime: item.updateTime,
+            praiseCount: item.praiseCount,
+            contentState: item.contentState,
+        }))
 
         // 返回用户信息给前端
-        res.json(content)
+        res.json(contentArray)
     } catch (error) {
-        console.error("Error fetching user info:", error)
+        console.error("Error fetching all content info:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/comment/praiseComment", async (req, res) => {
+    console.log("Received POST request to /comment/praiseComment")
+    try {
+        const { commentId } = req.body
+        console.log("Comment ID:", commentId)
+        console.log(`Got contract in ${contentInfo.target}`)
+        console.log("对评论进行点赞", commentId)
+
+        // 创建一个 Promise 用于等待事件被触发
+        const praiseDonePromise = new Promise((resolve, reject) => {
+            contentInfo.once("PraiseDone", (praiseCount) => {
+                console.log("PraiseDone:", praiseCount)
+                resolve(praiseCount)
+            })
+        })
+
+        // 调用智能合约的点赞评论函数
+        const transactionResponse = await contentInfo.praiseComment(commentId)
+        await transactionResponse.wait()
+
+        // 等待点赞事件被触发，并获取点赞数
+        const praiseCountReturn = await praiseDonePromise
+
+        // 返回点赞数给前端
+        res.json({ praiseCount: praiseCountReturn.toString() })
+    } catch (error) {
+        console.error("Error praising comment:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/create-comment", async (req, res) => {
+    console.log("Received POST request to /create-comment")
+    try {
+        const { userId, contentId, comment } = req.body
+        // 获取以太坊账号
+        console.log(`got contract in ${contentInfo.target}`)
+        console.log("Creating comment...")
+
+        // 创建一个 Promise 用于等待事件被触发
+        const commentCreatedPromise = new Promise((resolve, reject) => {
+            contentInfo.once("CommentCreated", (commentId) => {
+                console.log("Comment Created:", commentId)
+                resolve(commentId)
+            })
+        })
+
+        // 发送创建评论交易
+        const transactionResponse = await contentInfo.createComment(
+            fromStringToUint(contentId),
+            fromStringToUint(userId),
+            comment,
+        )
+        await transactionResponse.wait()
+
+        // 等待事件被触发，并获取评论 ID
+        const commentIdReturn = await commentCreatedPromise
+
+        console.log("Comment created successfully")
+        console.log(commentIdReturn)
+        res.json({ commentId: commentIdReturn.toString() })
+    } catch (error) {
+        console.error("Error creating comment:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.get("/comment/get/:commentId", async (req, res) => {
+    console.log("Received GET request to /comment/get/:commentId")
+    try {
+        const commentId = req.params.commentId
+        console.log("Comment ID:", commentId)
+        console.log(`Got contract in ${contentInfo.target}`)
+        const comment = await contentInfo.getComment(
+            fromStringToUint(commentId),
+        )
+        console.log("获取评论信息如下", comment)
+        // 返回评论信息给前端
+        res.json({
+            contentId: comment.contentId,
+            userId: comment.userId,
+            commentId: comment.commentId,
+            comment: comment.comment,
+            updateTime: comment.updateTime,
+            praiseCount: comment.praiseCount,
+            commentState: comment.commentState,
+        })
+    } catch (error) {
+        console.error("Error fetching comment info:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/comment/update", async (req, res) => {
+    console.log("Received POST request to /comment/update")
+    try {
+        const { commentId, comment } = req.body
+        console.log("Comment ID:", commentId)
+        console.log(`Got contract in ${contentInfo.target}`)
+        console.log("Updating comment...")
+        // 调用合约的 updateComment 函数
+        const transactionResponse = await contentInfo.updateComment(
+            fromStringToUint(commentId),
+            comment,
+        )
+        await transactionResponse.wait()
+        // 返回成功消息给前端
+        res.json({ message: "Comment updated successfully" })
+    } catch (error) {
+        console.error("Error updating comment:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+//获取content对应的comment
+app.get("/content/getCommentsByContentId/:contentId", async (req, res) => {
+    console.log("Received GET request to /content/getCommentsByContentId")
+    try {
+        const contentId = req.params.contentId
+        console.log("Content ID:", contentId)
+        console.log(`Got contract in ${contentInfo.target}`)
+        const comments = await contentInfo.getCommentsByContentId(
+            fromStringToUint(contentId),
+        )
+        console.log("获取评论信息如下", comments)
+        const commentArray = comments.map((item) => ({
+            contentId: item.contentId,
+            userId: item.userId,
+            commentId: item.commentId,
+            comment: item.comment,
+            updateTime: item.updateTime,
+            praiseCount: item.praiseCount,
+            commentState: item.commentState,
+        }))
+        // 返回评论信息给前端
+        res.json(commentArray)
+    } catch (error) {
+        console.error("Error fetching comment info:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/comment/praiseComment", async (req, res) => {
+    console.log("Received POST request to /comment/praiseComment")
+    try {
+        const { commentId } = req.body
+        console.log("Comment ID:", commentId)
+        console.log(`Got contract in ${contentInfo.target}`)
+        console.log("对文章进行点赞", commentId)
+        // 创建一个 Promise 用于等待事件被触发
+        const praiseDonePromise = new Promise((resolve, reject) => {
+            contentInfo.once("PraiseCommentDone", (praiseCount) => {
+                console.log("PraiseCommentDone:", praiseCount)
+                resolve(praiseCount)
+            })
+        })
+        const transactionResponse = await contentInfo.praiseContent(commentId)
+        await transactionResponse.wait()
+        const praiseCountReturn = await praiseDonePromise
+        // 返回用户信息给前端
+        res.json({ praiseCount: praiseCountReturn.toString() })
+    } catch (error) {
+        console.error("Error praising comment:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })
