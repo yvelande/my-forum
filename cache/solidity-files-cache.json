@@ -84,6 +84,94 @@
       "artifacts": [
         "ContentInfo"
       ]
+    },
+    "/home/huyu0408/hh-fcc/my-forum/contracts/ManageInfo.sol": {
+      "lastModificationDate": 1709986741448,
+      "contentHash": "60ce125c4026d0fe1a58351e842aa7a2",
+      "sourceName": "contracts/ManageInfo.sol",
+      "solcConfig": {
+        "version": "0.8.7",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./UserInfo.sol",
+        "./ContentInfo.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.7"
+      ],
+      "artifacts": [
+        "ManagementInfo"
+      ]
+    },
+    "/home/huyu0408/hh-fcc/my-forum/contracts/Token.sol": {
+      "lastModificationDate": 1709991585157,
+      "contentHash": "216151f5a60f1d2234e9f3fc37307502",
+      "sourceName": "contracts/Token.sol",
+      "solcConfig": {
+        "version": "0.8.7",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.7"
+      ],
+      "artifacts": [
+        "TokenERC20",
+        "tokenRecipient"
+      ]
     }
   }
 }
