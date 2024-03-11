@@ -186,4 +186,8 @@ contract TokenERC20 {
         emit Burn(_from, _value);
         return true;
     }
+
+    function getBalance(address userAddress) public view returns (uint256) {
+        return balanceOf[userAddress];
+    }
 }

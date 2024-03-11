@@ -24,11 +24,11 @@ contract UserInfo {
     }
     // 用户ID到用户结构体的映射
     mapping(uint256 => User) public userMap;
-    // 已注册用户地址
-    address[] public registeredUserAddresses;
-
     // event UserRegistered(string userId);
     event UserRegistered(uint256 userId);
+
+    // 已注册用
+    uint256[] registeredUserId;
 
     // 添加用户函数
     function createUser(
@@ -53,7 +53,7 @@ contract UserInfo {
             1
         );
         userMap[_userId] = newUser;
-        registeredUserAddresses.push(_userAddress);
+        registeredUserId.push(_userId);
         emit UserRegistered(_userId);
     }
 
@@ -108,6 +108,10 @@ contract UserInfo {
             userMap[userId].userState
         );
         userMap[userId] = newUser;
+    }
+
+    function getRegisteredUserId() public view returns (uint256[] memory) {
+        return registeredUserId;
     }
 
     // 将 uint256 类型转换为字符串

@@ -15,6 +15,8 @@ app.use(cors())
 // })
 let userInfo
 let contentInfo
+let tokenContract
+let manageInfo
 // 注册用户路由
 
 // 创建合约
@@ -181,6 +183,8 @@ app.post("/create-article", async (req, res) => {
     console.log("Received POST request to /create-article")
     try {
         const { userId, title, content } = req.body
+        //获取用户
+        const user = await userInfo.getUserInfo(fromStringToUint(userId))
         // 获取以太坊账号
         console.log(`got contract in ${contentInfo.target}`)
         console.log("Creating article...")
@@ -200,6 +204,10 @@ app.post("/create-article", async (req, res) => {
             content,
         )
         await transactionResponse.wait()
+
+        // 转账给用户100个代币
+        const tx = await tokenContract.transfer(user.userAddress, 100)
+        await tx.wait()
 
         // 等待事件被触发，并获取文章 ID
         const contentIdReturn = await contentCreatedPromise
@@ -306,6 +314,16 @@ app.post("/content/doPraise", async (req, res) => {
         const transactionResponse = await contentInfo.praiseContent(contentId)
         await transactionResponse.wait()
 
+        const content = await contentInfo.getContent(
+            fromStringToUint(contentId),
+        )
+        const contentUser = await userInfo.getUserInfo(
+            fromStringToUint(content.userId),
+        )
+        //转账给发表文章用户1代币
+        const tx1 = await tokenContract.transfer(contentUser.userAddress, 1)
+        await tx1.wait()
+
         // 等待点赞事件被触发，并获取点赞数
         const praiseCountReturn = await praiseDonePromise
 
@@ -341,6 +359,20 @@ app.post("/create-comment", async (req, res) => {
         )
         await transactionResponse.wait()
 
+        const user = await userInfo.getUserInfo(fromStringToUint(userId))
+        // 转账给发表评论用户10个代币
+        const tx = await tokenContract.transfer(user.userAddress, 10)
+        await tx.wait()
+
+        const content = await contentInfo.getContent(
+            fromStringToUint(contentId),
+        )
+        const contentUser = await userInfo.getUserInfo(
+            fromStringToUint(content.userId),
+        )
+        //转账给发表文章用户1代币
+        const tx1 = await tokenContract.transfer(contentUser.userAddress, 1)
+        await tx1.wait()
         // 等待事件被触发，并获取评论 ID
         const commentIdReturn = await commentCreatedPromise
 
@@ -542,6 +574,172 @@ app.get("/complain/getAllComplaints", async (req, res) => {
         res.json(complaintArray)
     } catch (error) {
         console.error("Error fetching all complaint info:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+// 创建代币合约
+app.post("/create-token", async (req, res) => {
+    console.log("Received POST request to /create-token")
+    try {
+        const accounts = await ethers.getSigners()
+        signer = accounts[0]
+        console.log(signer)
+        await deployments.fixture(["all"])
+        const TokenDeployment = await deployments.get("TokenERC20")
+        tokenContract = await ethers.getContractAt(
+            TokenDeployment.abi,
+            TokenDeployment.address,
+            signer,
+        )
+        console.log(`got contract in ${tokenContract.target}`)
+        res.json({ message: "成功创建代币合约" })
+    } catch (error) {
+        console.error("Error creating Content:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+//查询用户id对应的代币余额
+app.get("/token/get/:userId", async (req, res) => {
+    console.log("Received GET request to /user-token-balance")
+    try {
+        const { userId } = req.params
+        const user = await userInfo.getUserInfo(fromStringToUint(userId))
+        console.log(user)
+        // 查询用户代币余额
+        const balance = await tokenContract.getBalance(user.userAddress)
+
+        console.log(
+            `User ${user.userAddress} token balance:`,
+            balance.toString(),
+        )
+        res.json({ userId, balance: balance.toString() })
+    } catch (error) {
+        console.error("Error fetching user token balance:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/token/transfer", async (req, res) => {
+    console.log("Received POST request to /token/transfer")
+    try {
+        const { userId, amount } = req.body
+        const user = await userInfo.getUserInfo(fromStringToUint(userId))
+
+        // 假设你的代币合约在 tokenContract 变量中
+        // 发起转账交易
+        const transactionResponse = await tokenContract.transfer(
+            user.userAddress,
+            fromStringToUint(amount),
+        )
+
+        console.log("Transfer transaction response:", transactionResponse)
+
+        res.json({
+            status: "Transfer successful",
+            transactionHash: transactionResponse.hash,
+        })
+    } catch (error) {
+        console.error("Error transferring tokens:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+// 创建合约
+app.post("/create-manage", async (req, res) => {
+    console.log("Received POST request to /create-manage")
+    try {
+        const accounts = await ethers.getSigners()
+        signer = accounts[0]
+        console.log(signer)
+        await deployments.fixture(["all"])
+        const ManageInfoDeployment = await deployments.get("ManageInfo")
+        manageInfo = await ethers.getContractAt(
+            ManageInfoDeployment.abi,
+            ManageInfoDeployment.address,
+            signer,
+        )
+        console.log(`got contract in ${manageInfo.target}`)
+        res.json({ message: "成功创建管理合约" })
+    } catch (error) {
+        console.error("Error creating Manage:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/manage/createCommittee", async (req, res) => {
+    console.log("Received POST request to /manage/createCommittee")
+    try {
+        console.log(`got contract in ${manageInfo.target}`)
+        // const committeePromise = new Promise((resolve, reject) => {
+        //     manageInfo.once("CommitteGotten", (committee) => {
+        //         console.log("Committe Gotten:", committee)
+        //         resolve(committee)
+        //     })
+        // })
+        const transactionResponse = await manageInfo.getCommitMembers()
+        await transactionResponse.wait()
+        console.log(transactionResponse)
+        // const committeeInReturn = await committeePromise
+        res.json({
+            committe: "success",
+        })
+    } catch (error) {
+        console.error("Error transferring tokens:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.get("/manage/getCommittee", async (req, res) => {
+    console.log("Received POST request to /manage/getCommittee")
+    try {
+        console.log(`got contract in ${manageInfo.target}`)
+        const ret = await manageInfo.returnCommitMembers()
+        console.log(ret)
+        res.json({
+            committe: ret,
+        })
+    } catch (error) {
+        console.error("Error transferring tokens:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.post("/manage/makeVotes", async (req, res) => {
+    console.log("Received POST request to /manage/makeVotes")
+    try {
+        const { userId, complainId, isVote } = req.body
+        console.log(`got contract in ${manageInfo.target}`)
+        const transactionResponse = await manageInfo.makeVote(
+            fromStringToUint(userId),
+            fromStringToUint(complainId),
+            fromStringToUint(isVote),
+        )
+        await transactionResponse.wait()
+        console.log(transactionResponse)
+        res.json({
+            message: "success",
+        })
+    } catch (error) {
+        console.error("Error transferring tokens:", error)
+        res.status(500).json({ error: "Internal Server Error" })
+    }
+})
+
+app.get("/manage/getVoteResults/:complainId", async (req, res) => {
+    console.log("Received GET request to /manage/getVoteResults")
+    try {
+        const { complainId } = req.params
+        console.log("获取的投诉是", complainId)
+        console.log(`got contract in ${manageInfo.target}`)
+        const supportNumber = await manageInfo.getVoteResults(complainId)
+        console.log("赞同的数量是", supportNumber)
+        res.json({
+            supportNumber: supportNumber,
+        })
+    } catch (error) {
+        console.error("Error transferring tokens:", error)
         res.status(500).json({ error: "Internal Server Error" })
     }
 })
