@@ -2,8 +2,8 @@ const {
     networkConfig,
     developmentChains,
 } = require("../helper-hardhat-config.js")
-
 const { network } = require("hardhat")
+// if (!developmentChains.includes(network.name)) {
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
@@ -47,4 +47,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     log("ManagementInfo deployed at:", managementInfoContract.address)
     log("----------------------------------------------------")
 }
-module.exports.tags = ["all"]
+module.exports.tags = ["all", "mocks"]
+// }
