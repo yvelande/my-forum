@@ -6,6 +6,7 @@ const { web3, default: Web3 } = require("web3")
 const { application } = require("express")
 const app = express()
 app.use(bodyParser.json())
+
 // 使用CORS中间件
 app.use(cors())
 // 错误处理中间件

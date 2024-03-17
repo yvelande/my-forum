@@ -1,3 +1,4 @@
+
 <template>
   <div class="register-container">
     <el-card class="register-card">
@@ -19,7 +20,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { registerUser } from '../api.js';
+
 export default {
   data() {
     return {
@@ -35,33 +37,18 @@ export default {
     };
   },
   methods: {
-    register() {
-      this.$refs.registerForm.validate(valid => {
-        if (valid) {
-          // 获取用户名和密码
-          const { userName, pwd } = this.registerForm;
-          // 获取连接钱包的地址
-          const userAddress = this.userAddress; // 修改为 userAddress
-          
-          // 发送注册请求到后端
-          axios.post('/register', {
-            userName: userName,
-            pwd: pwd,
-            userAddress: userAddress
-          })
-          .then(response => {
-            // 处理注册成功的逻辑
-            console.log(response.data);
-          })
-          .catch(error => {
-            // 处理注册失败的逻辑
-            console.error(error);
-            console.log(error.message)
-          });
-        } else {
-          return false;
-        }
-      });
+    async register() {
+      try {
+        await this.$refs.registerForm.validate();
+        const { userName, pwd } = this.registerForm;
+        const userAddress = this.userAddress;
+        const response = await registerUser(userName, pwd, userAddress);
+        console.log(response);
+        // 处理注册成功的逻辑，例如跳转到登录页面
+      } catch (error) {
+        console.error('注册失败:', error);
+        // 处理注册失败的逻辑，例如提示用户注册失败
+      }
     },
     connectWallet() {
       if (typeof window.ethereum !== 'undefined') {
